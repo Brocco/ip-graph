@@ -1,1 +1,9 @@
 <svg width="960" height="600" #fdsvg></svg>
+<button #contextButton
+  *ngIf="contextInfo"
+  (mouseout)="conextButtonBlur()"
+  (click)="conextButtonClick()"
+  [style.top]="contextInfo.top"
+  [style.left]="contextInfo.left">
+  {{contextInfo.text}}
+</button>

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnChanges, SimpleChanges,
   ElementRef, Input, ViewChild } from '@angular/core';
+import { Http, Response } from '@angular/http';
 
 import { Data, IpAddress, Link } from '../data.model';
 
@@ -16,8 +17,12 @@ export class FdGraphComponent implements OnInit, OnChanges {
   @ViewChild('fdsvg') fdsvg;
   svg: any;
   simulation: d3Force.Simulation<IpAddress, Link>;
+  contextInfo: any;
 
-  constructor(private elem: ElementRef) {}
+  constructor(
+    private elem: ElementRef,
+    private http: Http) {}
+
   ngOnInit() {}
 
   ngOnChanges(changes: SimpleChanges) {
@@ -73,8 +78,17 @@ export class FdGraphComponent implements OnInit, OnChanges {
       .selectAll('circle')
       .data(data.ips)
       .enter().append('circle')
-      .attr('r', 3)
-      .attr('fill', d => this.getUglyColor(d.ip));
+      .attr('r', 5)
+      .attr('fill', d => this.getUglyColor(d.ip))
+      .on('contextmenu', (d, i) => {
+        d3.event['preventDefault']();
+        this.contextInfo = {
+          text: `Find ${d.ip}`,
+          ip: d.ip,
+          top: (d3.event['offsetY'] - 10) + 'px',
+          left: (d3.event['offsetX'] - 10) + 'px'
+        };
+      });
 
     this.simulation
       .nodes(data.ips)
@@ -96,4 +110,24 @@ export class FdGraphComponent implements OnInit, OnChanges {
     }
   }
 
+  private conextButtonBlur() {
+    this.contextInfo = undefined;
+  }
+
+  private conextButtonClick() {
+    let url = `http://ip-api.com/json/${this.contextInfo.ip}`
+    let subscription = this.http.get(url)
+      .map((response: Response) => response.json())
+      .subscribe(response => {
+        subscription.unsubscribe();
+        if (response.status === 'fail') {
+          alert('invalid IP address');
+        } else {
+          alert(`The IP address ${response.query} is located` +
+            `\nin ${response.city}, ${response.country}` +
+            `\n(${response.lat}, ${response.lon})`);
+        }
+      });
+    this.contextInfo = undefined;
+  }
 }
